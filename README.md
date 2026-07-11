@@ -52,12 +52,15 @@ Copy and rename `config.example.json` to `config.json` (it's gitignored) and set
 | `appId` | `DISCORD_APP_ID` | The shared wavez.fm presence app |
 | `port` | `PORT` | `6969` |
 | `largeImage` | `LARGE_IMAGE` | Wavez logo |
+| `sourceBadges` | `SOURCE_BADGES` | `false` |
 
 `appId`, the Discord application your presence appears under. The bundled default is a public identifier, not a secret. Application IDs ship inside every Discord client, so sharing one is expected and safe. Point this at your own [Discord app](https://discord.com/developers/applications) only if you want a different app name on your profile.
 
 `largeImage`, fallback artwork when a track has no thumbnail. Either an image URL, or the key of an asset you uploaded under Rich Presence → Art Assets in your Discord app.
 
 `port`, change only if `6969` is taken. If you do, update `BRIDGE` at the top of the userscript to match; both ends have to agree.
+
+`sourceBadges`, what the small corner badge on the artwork shows. Off by default, so it's the wavez logo with `wavez.fm` on hover. Set it to `true` and it becomes a YouTube or SoundCloud badge instead, or a **Live** indicator for live streams.
 
 ## Troubleshooting
 

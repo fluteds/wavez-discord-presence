@@ -1,5 +1,6 @@
 {
   "appId": "1522376776536428655",
   "port": 6969,
-  "largeImage": "https://wavez.fm/favicon.ico"
+  "largeImage": "https://wavez.fm/favicon.ico",
+  "sourceBadges": false
 }

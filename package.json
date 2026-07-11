@@ -16,6 +16,7 @@
   },
   "scripts": {
     "start": "node presence.js",
+    "test": "node tests/clean.test.js",
     "version": "node -e \"const f='wavez-discord-presence.user.js',fs=require('fs'),v=require('./package.json').version;fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace(/(@version\\s+)[\\d.]+/,(m,p)=>p+v));console.log('userscript @version -> '+v)\" && git add wavez-discord-presence.user.js"
   },
   "keywords": [
