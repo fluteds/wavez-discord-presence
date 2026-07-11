@@ -1,16 +1,20 @@
 # Wavez Discord Presence
 
-Shows your wavez.fm room, current track, artist and DJ as Discord Rich Presence, with a "Join the room" button and a listener count.
+Show what you're listening to on [wavez.fm](https://wavez.fm) as Discord Rich Presence — track, artist, DJ, room, listener count, and a **Join the room** button so friends can drop in.
 
-Discord Rich Presence only works over a local IPC socket the browser can't reach, so it comes in two parts: a userscript reads the page, and this bridge forwards what it reads to the Discord desktop app.
+![license](https://img.shields.io/badge/license-MIT-blue) ![version](https://img.shields.io/badge/version-1.2.0-brightgreen) ![node](https://img.shields.io/badge/node-%3E%3D18-339933)
 
-## Setup
+Discord's Rich Presence only speaks over a local IPC socket, which a browser tab can't touch. So this ships as two halves: a **userscript** that reads the wavez page, and a small **bridge** that relays what it reads into the Discord desktop app.
 
-You need [Node.js](https://nodejs.org) and a userscript manager ([Tampermonkey](https://www.tampermonkey.net) or [Violentmonkey](https://violentmonkey.github.io)). No Discord app to create, no config to fill in.
+## Install
 
-**1.** Open [wavez-discord-presence.user.js](https://raw.githubusercontent.com/fluteds/wavez-discord-presence/main/wavez-discord-presence.user.js) — your userscript manager will offer to install it.
+You'll need [Node.js](https://nodejs.org) and a userscript manager — [Tampermonkey](https://www.tampermonkey.net) or [Violentmonkey](https://violentmonkey.github.io).
 
-**2. Run the bridge**, and leave it running alongside the Discord desktop app:
+There's no Discord app to register and no config to fill in.
+
+**1. Install the userscript.** Open [wavez-discord-presence.user.js](https://raw.githubusercontent.com/fluteds/wavez-discord-presence/main/wavez-discord-presence.user.js) and your userscript manager will offer to install it.
+
+**2. Run the bridge.**
 
 ```sh
 git clone https://github.com/fluteds/wavez-discord-presence
@@ -19,19 +23,30 @@ npm install
 npm start
 ```
 
-Open wavez.fm, join a room, and your presence updates automatically.
+**3. Open wavez.fm and join a room.** Your presence updates on its own.
 
-The bridge has to keep running for presence to show — it's the only thing that can reach Discord. Discord's Rich Presence works over a local IPC socket that a browser cannot touch, which is why this is two pieces rather than just a userscript. Closing the terminal clears your presence; wavez going quiet for 40s clears it too.
+Leave the bridge running in the background, next to the Discord desktop app. It's the only piece that can actually reach Discord — close the terminal and your presence disappears.
 
-## Display
+## What it shows
 
-The first line is the track (`title - artist`); the second is the DJ, falling back to the room name. The room's listener count shows as the "party" size, and the track's own thumbnail is used as the artwork when available. A corner badge marks the source (YouTube/SoundCloud), or shows a red **Live** indicator for live streams. Buttons link to the room and, for YouTube tracks, straight to the video.
+| Presence slot | Filled with |
+| --- | --- |
+| Line 1 | Track title |
+| Line 2 | The DJ |
+| Artwork | The track's thumbnail, falling back to the wavez logo |
+| Artwork tooltip | Room name and how many others are listening |
+| Corner badge | YouTube or SoundCloud, or a red **Live** dot for streams |
+| Party size | The room's listener count |
+| Progress bar | Track position, from its start time and duration |
+| Button | **Join the room** |
+
+Presence clears itself when you pause, when nothing is playing, and when wavez goes quiet for 40 seconds — so leaving the tab won't strand a stale track on your profile.
 
 ## Config
 
-Optional. The defaults work as-is — skip this section unless something clashes.
+**Optional — the defaults work as-is.** Skip this unless something clashes.
 
-To change anything, copy `config.example.json` to `config.json` (it's gitignored) and set only the keys you care about. Each is also overridable by an env var, which wins over the file:
+Copy `config.example.json` to `config.json` (it's gitignored) and set only the keys you care about. Every key also has an env var, which wins over the file.
 
 | Key | Env var | Default |
 | --- | --- | --- |
@@ -39,26 +54,28 @@ To change anything, copy `config.example.json` to `config.json` (it's gitignored
 | `port` | `PORT` | `6969` |
 | `largeImage` | `LARGE_IMAGE` | wavez logo |
 
-`appId` is the Discord application whose name and artwork your presence shows under. The bundled default is a public identifier, not a secret — application IDs ship inside every Discord client, so sharing one is expected and safe. Set your own only if you want the presence to appear under a different app name: create a [Discord app](https://discord.com/developers/applications) and copy its Application ID.
+**`appId`** — the Discord application your presence appears under. The bundled default is a public identifier, not a secret; application IDs ship inside every Discord client, so sharing one is expected and safe. Point this at your own [Discord app](https://discord.com/developers/applications) only if you want a different app name on your profile.
 
-`largeImage` is the fallback artwork (an uploaded Rich Presence asset key or an image URL); the track thumbnail takes precedence when present. To use an uploaded asset, add it under **Rich Presence → Art Assets** in your Discord app and reference its key.
+**`largeImage`** — fallback artwork when a track has no thumbnail. Either an image URL, or the key of an asset you uploaded under **Rich Presence → Art Assets** in your Discord app.
 
-Change `port` only if `6969` is taken — if you do, change `BRIDGE` at the top of the userscript to match, since both ends have to agree.
+**`port`** — change only if `6969` is taken. If you do, update `BRIDGE` at the top of the userscript to match; both ends have to agree.
 
-## Versioning
+## Troubleshooting
 
-[Semantic versioning](https://semver.org). The bridge and the userscript ship as one unit and share a version: bump `version` in `package.json` and `@version` in the userscript header together, then tag `vX.Y.Z`.
+**Nothing shows up in Discord.** Check the bridge's terminal. `✅ connected to Discord` means it found the desktop app — if it says Discord is unreachable, you're likely on the web version of Discord, which has no IPC socket and cannot work.
 
-- **Major** — the userscript/bridge wire format changes, so an old userscript no longer talks to a new bridge (or vice versa).
-- **Minor** — new presence fields or behaviour, both halves still interoperate.
-- **Patch** — fixes only.
+**The bridge says `port 6969 is busy`.** It's already running in another terminal. Either use that one, or set `PORT` and update `BRIDGE` in the userscript to match.
 
-The userscript's `@version` is what Tampermonkey compares for auto-updates, so it only ever goes up — never renumber it downward to match something else.
+**The bridge never logs anything when you play a track.** The userscript isn't reaching it. Open the browser console on wavez.fm and look for `[wz-presence]` lines; `bridge unreachable` means the bridge isn't running, and no lines at all means the userscript didn't load.
 
-## Commits
+**Your presence is stuck on an old track.** The bridge clears it after 40s without a heartbeat. If wavez is still open, the userscript has probably stopped — reload the tab.
 
-[Conventional Commits](https://www.conventionalcommits.org): `type(scope): summary`.
+## Contributing
 
-Types in use: `feat`, `fix`, `chore`, `docs`, `refactor`. Scope is optional and is usually `bridge` or `userscript` when a change touches only one half.
+[Conventional Commits](https://www.conventionalcommits.org) (`feat`, `fix`, `chore`, `docs`, `refactor`; scope is usually `bridge` or `userscript`) and [semantic versioning](https://semver.org).
 
-`feat` bumps the minor, `fix` bumps the patch, and a `!` (or a `BREAKING CHANGE:` footer) bumps the major — which here means the POST payload changed shape, so an old userscript and a new bridge no longer understand each other.
+The two halves ship as one unit and share a version, so bump `version` in `package.json` and `@version` in the userscript header together, then tag `vX.Y.Z`. A **major** means the POST payload changed shape and an old userscript can no longer talk to a new bridge. The userscript's `@version` drives Tampermonkey's auto-update check, so it only ever goes up.
+
+## License
+
+[MIT](LICENSE)
