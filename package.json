@@ -1,11 +1,16 @@
 {
   "name": "wavez-discord-presence",
-  "private": true,
   "version": "1.2.0",
   "description": "Local bridge that shows your currently playing wavez.fm tracks/status as Discord Rich Presence.",
   "license": "MIT",
   "main": "presence.js",
+  "bin": { "wavez-discord-presence": "presence.js" },
+  "files": ["presence.js", "config.example.json"],
   "engines": { "node": ">=18" },
   "scripts": { "start": "node presence.js" },
+  "keywords": ["wavez", "discord", "discord-rpc", "rich-presence", "userscript"],
+  "homepage": "https://github.com/fluteds/wavez-discord-presence",
+  "repository": { "type": "git", "url": "https://github.com/fluteds/wavez-discord-presence.git" },
+  "bugs": "https://github.com/fluteds/wavez-discord-presence/issues",
   "dependencies": { "@xhayper/discord-rpc": "^1.2.0" }
 }

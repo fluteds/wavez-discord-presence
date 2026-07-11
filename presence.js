@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // @ts-check
 // wavez.fm -> Discord Rich Presence bridge.
 // The browser can't reach Discord's IPC socket, so the userscript POSTs the current room/track here and this local process forwards it to Discord.
@@ -22,12 +23,15 @@
  */
 
 const http = require('http');
+const path = require('path');
 const { Client } = require('@xhayper/discord-rpc');
 
-// config.json is optional and gitignored; the defaults below work as-is.
+// config.json is optional; the defaults below work as-is.
+// Resolved from the working directory, not __dirname: under `npx` the script runs
+// from npm's cache, and the user's config.json is wherever they invoked it.
 /** @type {{ appId?: string, port?: number, largeImage?: string }} */
 let config = {};
-try { config = require('./config.json'); } catch { }
+try { config = require(path.resolve(process.cwd(), 'config.json')); } catch { }
 
 // The shared wavez.fm Rich Presence app. An application id is a public identifier
 // (it ships inside every Discord client), not a secret, so everyone can use this one.
