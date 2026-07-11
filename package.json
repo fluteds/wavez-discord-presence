@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "Local bridge that shows your currently playing wavez.fm tracks/status as Discord Rich Presence.",
+  "license": "MIT",
   "main": "presence.js",
   "scripts": { "start": "node presence.js" },
   "dependencies": { "@xhayper/discord-rpc": "^1.2.0" }
