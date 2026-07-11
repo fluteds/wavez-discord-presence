@@ -2,6 +2,8 @@
 
 Show what you're listening to on [wavez.fm](https://wavez.fm) as Discord Rich Presence, track, artist, DJ, room, listener count, and a Join the room button so friends can drop in.
 
+![A Discord presence card reading "Listening to Wavez.fm": the track ARCH ENEMY – Handshake with its thumbnail and a YouTube badge, DJ ielosubmarine, "In harkach with 7 others", a progress bar at 1:46 of 5:45, and a Join the room button.](assets/wavez-presence.png)
+
 Discord's Rich Presence only speaks over a local IPC socket, which a browser tab can't touch. So this ships as two halves: a userscript that reads the wavez page, and a small bridge that relays what it reads into the Discord desktop app.
 
 ## Install
