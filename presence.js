@@ -24,18 +24,18 @@
 const http = require('http');
 const { Client } = require('@xhayper/discord-rpc');
 
-// config.json is gitignored; env vars alone are enough for a fresh clone.
+// config.json is optional and gitignored; the defaults below work as-is.
 /** @type {{ appId?: string, port?: number, largeImage?: string }} */
 let config = {};
 try { config = require('./config.json'); } catch { }
 
-const APP_ID = process.env.DISCORD_APP_ID || config.appId;
-const PORT = Number(process.env.PORT) || config.port || 6969;
+// The shared wavez.fm Rich Presence app. An application id is a public identifier
+// (it ships inside every Discord client), not a secret, so everyone can use this one.
+// Override only to show your own app name/artwork in Discord.
+const DEFAULT_APP_ID = '1522376776536428655';
 
-if (!APP_ID) {
-  console.error('No Discord app id. Copy config.example.json to config.json and set "appId", or set DISCORD_APP_ID.');
-  process.exit(1);
-}
+const APP_ID = process.env.DISCORD_APP_ID || config.appId || DEFAULT_APP_ID;
+const PORT = Number(process.env.PORT) || config.port || 6969;
 
 // Corner-badge icons. Discord's asset proxy can't decode .ico, so use PNGs.
 // Google's favicon service returns a stable PNG for any domain.

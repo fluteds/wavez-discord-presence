@@ -6,18 +6,22 @@ Discord Rich Presence only works over a local IPC socket the browser can't reach
 
 ## Setup
 
-1. Clone the repo and install the userscript.
-2. Create a [Discord app](https://discord.com/developers/applications) and copy its Application ID.
-3. Copy `config.example.json` to `config.json` and paste in the Application ID (or set `DISCORD_APP_ID`).
-4. Start the bridge and leave it running alongside the Discord desktop app:
+You need [Node.js](https://nodejs.org) and a userscript manager ([Tampermonkey](https://www.tampermonkey.net) or [Violentmonkey](https://violentmonkey.github.io)). No Discord app to create, no config to fill in.
+
+**1.** Open [wavez-discord-presence.user.js](https://raw.githubusercontent.com/fluteds/wavez-discord-presence/main/wavez-discord-presence.user.js) — your userscript manager will offer to install it.
+
+**2. Run the bridge**, and leave it running alongside the Discord desktop app:
 
 ```sh
+git clone https://github.com/fluteds/wavez-discord-presence
 cd wavez-discord-presence
 npm install
 npm start
 ```
 
-Open wavez.fm and join a room, your presence updates automatically.
+Open wavez.fm, join a room, and your presence updates automatically.
+
+The bridge has to keep running for presence to show — it's the only thing that can reach Discord. Discord's Rich Presence works over a local IPC socket that a browser cannot touch, which is why this is two pieces rather than just a userscript. Closing the terminal clears your presence; wavez going quiet for 40s clears it too.
 
 ## Display
 
@@ -25,15 +29,21 @@ The first line is the track (`title - artist`); the second is the DJ, falling ba
 
 ## Config
 
-Values live in `config.json`, each overridable by an env var:
+Optional. The defaults work as-is — skip this section unless something clashes.
+
+To change anything, copy `config.example.json` to `config.json` (it's gitignored) and set only the keys you care about. Each is also overridable by an env var, which wins over the file:
 
 | Key | Env var | Default |
 | --- | --- | --- |
-| `appId` | `DISCORD_APP_ID` |  |
+| `appId` | `DISCORD_APP_ID` | the shared wavez.fm presence app |
 | `port` | `PORT` | `6969` |
 | `largeImage` | `LARGE_IMAGE` | wavez logo |
 
+`appId` is the Discord application whose name and artwork your presence shows under. The bundled default is a public identifier, not a secret — application IDs ship inside every Discord client, so sharing one is expected and safe. Set your own only if you want the presence to appear under a different app name: create a [Discord app](https://discord.com/developers/applications) and copy its Application ID.
+
 `largeImage` is the fallback artwork (an uploaded Rich Presence asset key or an image URL); the track thumbnail takes precedence when present. To use an uploaded asset, add it under **Rich Presence → Art Assets** in your Discord app and reference its key.
+
+Change `port` only if `6969` is taken — if you do, change `BRIDGE` at the top of the userscript to match, since both ends have to agree.
 
 ## Versioning
 
