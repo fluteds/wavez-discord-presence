@@ -20,6 +20,25 @@ npx wavez-discord-presence
 
 Leave the bridge running in the background. It's the only piece that can actually reach Discord, if you close the terminal, your presence disappears.
 
+### From source
+
+If you'd rather not use `npx`, or you want to edit the bridge, clone it and run it directly:
+
+```sh
+git clone https://github.com/fluteds/wavez-discord-presence
+cd wavez-discord-presence
+npm install
+npm start
+```
+
+Same thing, just pinned to the code in front of you rather than the published package. `config.json` goes in this folder.
+
+To install it globally instead, so `wavez-discord-presence` works as a command from anywhere:
+
+```sh
+npm install -g wavez-discord-presence
+```
+
 ## Config
 
 The defaults work as-is. Skip this unless something clashes.
