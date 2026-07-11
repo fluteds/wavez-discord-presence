@@ -33,9 +33,7 @@ const { Client } = require('@xhayper/discord-rpc');
 let config = {};
 try { config = require(path.resolve(process.cwd(), 'config.json')); } catch { }
 
-// The shared wavez.fm Rich Presence app. An application id is a public identifier
-// (it ships inside every Discord client), not a secret, so everyone can use this one.
-// Override only to show your own app name/artwork in Discord.
+// The shared wavez.fm Rich Presence app. An application id is a public identifier (it ships inside every Discord client), not a secret, so everyone can use this one. Override only to show your own app name/artwork in Discord.
 const DEFAULT_APP_ID = '1522376776536428655';
 
 const APP_ID = process.env.DISCORD_APP_ID || config.appId || DEFAULT_APP_ID;
@@ -50,7 +48,7 @@ const SOURCES = {
   youtube: { name: 'YouTube', icon: favicon('youtube.com') },
   soundcloud: { name: 'SoundCloud', icon: favicon('soundcloud.com') },
 };
-const LIVE_ICON = favicon('wavez.fm');
+const WAVEZ_ICON = favicon('wavez.fm');
 
 // Discord rejects details/state shorter than 2 chars, pad, and caps at 128
 /** @param {unknown} s @returns {string | undefined} */
@@ -87,12 +85,17 @@ function apply(status) {
   }
 
   const url = /^https?:\/\//.test(status.url || '') ? status.url : null;
-  const title = status.artist ? `${status.track}` : status.track; // use - ${status.artist} if you want to display artist's name
+  const title = status.track;
+  // Line 2: "Crystal Castles • DJ f5."
   const line2 = [
-    status.dj && `DJ: ${status.dj}`,
-    //status.room && `${status.room}`,
-    //status.listeners && `${status.listeners} listening`,
-  ].filter(Boolean).join('\n');
+    status.artist,
+    status.dj && `DJ ${status.dj}`,
+  ].filter(Boolean).join(' • ');
+  // Line 3: "harkach • 5 listeners". Discord renders largeImageText as its own line.
+  const line3 = [
+    status.room,
+    status.listeners && `${status.listeners} listener${status.listeners === 1 ? '' : 's'}`,
+  ].filter(Boolean).join(' • ');
   // The API sends no source/sourceId, so infer from the artwork host.
   const img = status.image || '';
   let source = String(status.source || '').toLowerCase();
@@ -109,12 +112,14 @@ function apply(status) {
     type: 2, // Listening. Some Discord builds still show "Playing"
     details: clamp(title) || 'Listening on wavez.fm',
     state: clamp(line2),
-    largeImageText: clamp(status.listeners ? `In ${status.room} with ${status.listeners} other${status.listeners === 1 ? '' : 's'}` : status.room) || 'wavez.fm', // some reason the large image hover text also creates its own line?
-    largeImageKey: status.image || process.env.LARGE_IMAGE || config.largeImage || LIVE_ICON,
+    largeImageText: clamp(line3) || 'wavez.fm',
+    largeImageKey: status.image || process.env.LARGE_IMAGE || config.largeImage || WAVEZ_ICON,
     buttons: buttons.length ? buttons : undefined,
   };
-  if (status.isLive) { activity.smallImageKey = LIVE_ICON; activity.smallImageText = 'Live'; }
+  // Corner badge: Live beats the source, and wavez is the fallback when neither applies.
+  if (status.isLive) { activity.smallImageKey = WAVEZ_ICON; activity.smallImageText = 'Live'; }
   else if (src) { activity.smallImageKey = src.icon; activity.smallImageText = src.name; }
+  else { activity.smallImageKey = WAVEZ_ICON; activity.smallImageText = 'wavez.fm'; }
   if (status.listeners) { activity.partySize = status.listeners; activity.partyMax = status.listeners; }
 
   // startedAt
