@@ -7,7 +7,10 @@
   "bin": { "wavez-discord-presence": "presence.js" },
   "files": ["presence.js", "config.example.json"],
   "engines": { "node": ">=18" },
-  "scripts": { "start": "node presence.js" },
+  "scripts": {
+    "start": "node presence.js",
+    "version": "node -e \"const f='wavez-discord-presence.user.js',fs=require('fs'),v=require('./package.json').version;fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace(/(\\/\\/ @version\\s+)[\\d.]+/,'$1'+v));console.log('userscript @version -> '+v)\" && git add wavez-discord-presence.user.js"
+  },
   "keywords": ["wavez", "discord", "discord-rpc", "rich-presence", "userscript"],
   "homepage": "https://github.com/fluteds/wavez-discord-presence",
   "repository": { "type": "git", "url": "https://github.com/fluteds/wavez-discord-presence.git" },
