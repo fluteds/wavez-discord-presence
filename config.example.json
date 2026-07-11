@@ -1,0 +1,5 @@
+{
+  "appId": "your-discord-application-id",
+  "port": 6969,
+  "largeImage": "https://wavez.fm/favicon.ico"
+}
