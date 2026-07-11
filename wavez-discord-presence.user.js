@@ -2,7 +2,7 @@
 // @name         Wavez Discord Presence
 // @namespace    https://wavez.fm/
 // @icon         https://wavez.fm/favicon.ico
-// @version      1.2
+// @version      1.2.0
 // @description  Sends your wavez.fm room, track, artist, DJ and listener count to a local bridge that shows it as Discord Rich Presence.
 // @match        https://wavez.fm/*
 // @match        https://wavez.fm/~/*

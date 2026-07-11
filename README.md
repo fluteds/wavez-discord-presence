@@ -34,3 +34,13 @@ Values live in `config.json`, each overridable by an env var:
 | `largeImage` | `LARGE_IMAGE` | wavez logo |
 
 `largeImage` is the fallback artwork (an uploaded Rich Presence asset key or an image URL); the track thumbnail takes precedence when present. To use an uploaded asset, add it under **Rich Presence → Art Assets** in your Discord app and reference its key.
+
+## Versioning
+
+[Semantic versioning](https://semver.org). The bridge and the userscript ship as one unit and share a version: bump `version` in `package.json` and `@version` in the userscript header together, then tag `vX.Y.Z`.
+
+- **Major** — the userscript/bridge wire format changes, so an old userscript no longer talks to a new bridge (or vice versa).
+- **Minor** — new presence fields or behaviour, both halves still interoperate.
+- **Patch** — fixes only.
+
+The userscript's `@version` is what Tampermonkey compares for auto-updates, so it only ever goes up — never renumber it downward to match something else.
