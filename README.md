@@ -44,3 +44,11 @@ Values live in `config.json`, each overridable by an env var:
 - **Patch** — fixes only.
 
 The userscript's `@version` is what Tampermonkey compares for auto-updates, so it only ever goes up — never renumber it downward to match something else.
+
+## Commits
+
+[Conventional Commits](https://www.conventionalcommits.org): `type(scope): summary`.
+
+Types in use: `feat`, `fix`, `chore`, `docs`, `refactor`. Scope is optional and is usually `bridge` or `userscript` when a change touches only one half.
+
+`feat` bumps the minor, `fix` bumps the patch, and a `!` (or a `BREAKING CHANGE:` footer) bumps the major — which here means the POST payload changed shape, so an old userscript and a new bridge no longer understand each other.
