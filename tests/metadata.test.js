@@ -1,0 +1,85 @@
+// Checks the title parser that turns YouTube's "channel + messy title" into artist/track.
+// Run: npm test
+const assert = require('assert');
+const { trackMetadata } = require('../src/metadata.js');
+
+// The "Artist - Title" split only applies to YouTube, where the uploader is a channel rather
+// than the artist. Elsewhere (SoundCloud) the metadata is already correct and a dash in the
+// title is just a dash.
+/** @param {string} track @param {string} [artist] */
+const yt = (track, artist) => trackMetadata({ track, artist, source: 'youtube' });
+/** @param {string} track @param {string} [artist] */
+const sc = (track, artist) => trackMetadata({ track, artist, source: 'soundcloud' });
+
+// Uploader is a channel, not the artist. The title wins.
+assert.deepStrictEqual(
+  yt('The Black Eyed Peas - My Humps', 'BlackEyedPeasVEVO'),
+  { artist: 'The Black Eyed Peas', title: 'My Humps' });
+assert.deepStrictEqual(
+  yt('Ruby My Dear - Jit Thin', 'The Amen Connection'),
+  { artist: 'Ruby My Dear', title: 'Jit Thin' });
+assert.deepStrictEqual(
+  yt('Crystal Castles - Vanished', 'Crystal Castles - Topic'),
+  { artist: 'Crystal Castles', title: 'Vanished' });
+
+// Upload noise is dropped, whatever the phrasing or bracket style.
+assert.deepStrictEqual(
+  yt('Rick Astley - Never Gonna Give You Up (Official Video)', 'RickAstleyVEVO'),
+  { artist: 'Rick Astley', title: 'Never Gonna Give You Up' });
+assert.deepStrictEqual(
+  yt('Radiohead - Creep [Official Audio]', 'Radiohead'),
+  { artist: 'Radiohead', title: 'Creep' });
+assert.deepStrictEqual(
+  yt('Dua Lipa - Levitating (Official Music Video HD)', 'DuaLipaVEVO'),
+  { artist: 'Dua Lipa', title: 'Levitating' });
+assert.deepStrictEqual(
+  yt('Tame Impala - The Less I Know The Better | Official Video', 'TameImpalaVEVO'),
+  { artist: 'Tame Impala', title: 'The Less I Know The Better' });
+assert.deepStrictEqual(
+  yt('Gorillaz - Feel Good Inc. (Official Video) [4K]', 'GorillazVEVO'),
+  { artist: 'Gorillaz', title: 'Feel Good Inc.' });
+// A remaster year is a real edition, not upload noise, so it stays.
+assert.deepStrictEqual(
+  yt('Radiohead - Creep (Remastered 2011)', 'Radiohead'),
+  { artist: 'Radiohead', title: 'Creep (Remastered 2011)' });
+
+// Brackets carrying real information survive.
+assert.deepStrictEqual(
+  yt('Queen - Bohemian Rhapsody (Live at Wembley)', 'QueenOfficial'),
+  { artist: 'Queen', title: 'Bohemian Rhapsody (Live at Wembley)' });
+assert.deepStrictEqual(
+  yt('Daft Punk - Get Lucky (feat. Pharrell Williams)', 'DaftPunkVEVO'),
+  { artist: 'Daft Punk', title: 'Get Lucky (feat. Pharrell Williams)' });
+// A junk word is only junk inside brackets.
+assert.deepStrictEqual(
+  yt('Lana Del Rey - Video Games', 'LanaDelReyVEVO'),
+  { artist: 'Lana Del Rey', title: 'Video Games' });
+// An official live video is a live take, not upload noise.
+assert.deepStrictEqual(
+  yt('Arctic Monkeys - 505 (Official Live Video)', 'ArcticMonkeysVEVO'),
+  { artist: 'Arctic Monkeys', title: '505 (Live)' });
+
+// Already-clean metadata (SoundCloud) survives untouched, dash and all.
+assert.deepStrictEqual(
+  sc('A Little Piece Of Heaven', 'Avenged Sevenfold'),
+  { artist: 'Avenged Sevenfold', title: 'A Little Piece Of Heaven' });
+assert.deepStrictEqual(
+  sc('Get Down - Extended Mix', 'Fisher'),
+  { artist: 'Fisher', title: 'Get Down - Extended Mix' });
+
+// A leading artist name is dropped from the title rather than doubled up.
+assert.deepStrictEqual(
+  sc('Avenged Sevenfold - Hail To The King', 'Avenged Sevenfold'),
+  { artist: 'Avenged Sevenfold', title: 'Hail To The King' });
+
+// No " - " means no split.
+assert.deepStrictEqual(
+  yt('Bohemian Rhapsody', 'Queen'),
+  { artist: 'Queen', title: 'Bohemian Rhapsody' });
+
+// Missing artist entirely: take it from the title.
+assert.deepStrictEqual(
+  yt('Aphex Twin - Xtal', undefined),
+  { artist: 'Aphex Twin', title: 'Xtal' });
+
+console.log('trackMetadata(): all cases pass');

@@ -2,7 +2,7 @@
 
 Show what you're listening to on [wavez.fm](https://wavez.fm) as Discord Rich Presence, track, artist, DJ, room, listener count, and a Join the room button so friends can drop in.
 
-![A Discord presence card reading "Listening to Wavez.fm": the track ARCH ENEMY – Handshake with its thumbnail and a YouTube badge, DJ ielosubmarine, "In harkach with 7 others", a progress bar at 1:46 of 5:45, and a Join the room button.](assets/wavez-presence.png)
+![The image displays a music player interface. It shows that someone is listening to "Ghostlight" by Skeler and DJ yngk. The current time is 01:56 out of 02:29. The background features city skyscrapers, and the text "SKELER" is overlaid on the image. The song is noted as being played on "Move It! - Brasil," with 6 listeners currently tuned in.](assets/discord-presence.png)
 
 Discord's Rich Presence only speaks over a local IPC socket, which a browser tab can't touch. So this ships as two halves: a userscript that reads the wavez page, and a small bridge that relays what it reads into the Discord desktop app.
 
@@ -17,6 +17,8 @@ You'll need [Node.js](https://nodejs.org) and a userscript manager, preferably [
 ```sh
 npx wavez-discord-presence
 ```
+
+![Terminal recording of the bridge: npx installs wavez-discord-presence, it starts listening on port 6969, connects to Discord, then logs each track as it plays and clears the presence when playback pauses.](assets/demo.gif)
 
 3. Open wavez.fm and join a room. Your presence updates on its own.
 
@@ -53,6 +55,7 @@ Copy and rename `config.example.json` to `config.json` (it's gitignored) and set
 | `port` | `PORT` | `6969` |
 | `largeImage` | `LARGE_IMAGE` | Wavez logo |
 | `sourceBadges` | `SOURCE_BADGES` | `false` |
+| `lastfmKey` | `LASTFM_API_KEY` | Unset, iTunes is used instead |
 
 `appId`, the Discord application your presence appears under. The bundled default is a public identifier, not a secret. Application IDs ship inside every Discord client, so sharing one is expected and safe. Point this at your own [Discord app](https://discord.com/developers/applications) only if you want a different app name on your profile.
 
@@ -61,6 +64,8 @@ Copy and rename `config.example.json` to `config.json` (it's gitignored) and set
 `port`, change only if `6969` is taken. If you do, update `BRIDGE` at the top of the userscript to match; both ends have to agree.
 
 `sourceBadges`, what the small corner badge on the artwork shows. Off by default, so it's the wavez logo with `wavez.fm` on hover. Set it to `true` and it becomes a YouTube or SoundCloud badge instead, or a **Live** indicator for live streams.
+
+`lastfmKey`, where cover art comes from. wavez only sends the video thumbnail, so the real album cover is looked up by artist and track. Leave this unset and iTunes answers, no key and no setup, which is what `npx` gives you. Set it and Last.fm is asked first, falling back to iTunes when it has no cover, which is worth doing if you listen to anything iTunes doesn't stock. Grab a key from [Last.fm's API page](https://www.last.fm/api/account/create); it's free and instant. The bridge prints which source it's using on startup.
 
 ## Troubleshooting
 
