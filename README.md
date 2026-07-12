@@ -37,7 +37,7 @@ npm start
 
 Same thing, just pinned to the code in front of you rather than the published package. `config.json` goes in this folder.
 
-To install it globally instead, so `wavez-discord-presence` works as a command from anywhere:
+To install it globally, so `wavez-discord-presence` works as a command from anywhere:
 
 ```sh
 npm install -g wavez-discord-presence
