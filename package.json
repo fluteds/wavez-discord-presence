@@ -34,5 +34,9 @@
   "bugs": "https://github.com/fluteds/wavez-discord-presence/issues",
   "dependencies": {
     "@xhayper/discord-rpc": "^1.2.0"
+  },
+  "//overrides": "@discordjs/rest pins undici to an exact 6.24.1, which is under the <=6.26.0 advisories. Drop this once it ships a version that asks for 6.27.0 itself.",
+  "overrides": {
+    "undici": "^6.27.0"
   }
 }
