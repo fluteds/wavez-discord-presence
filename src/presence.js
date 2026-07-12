@@ -193,7 +193,7 @@ http.createServer((req, res) => {
   process.exit(1);
 }).listen(PORT, () => {
   log(`🎧 wavez presence bridge listening on :${PORT}`);
-  log(`🎨 cover art: ${lastfmEnabled ? 'Last.fm, falling back to iTunes' : 'iTunes (set lastfmKey to use Last.fm)'}`);
+  log(`🎨 cover art: ${lastfmEnabled ? 'Last.fm (iTunes on a miss)' : 'iTunes (set lastfmKey to use Last.fm)'}`);
 });
 
 connect();
