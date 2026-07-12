@@ -20,7 +20,7 @@
 
   const BRIDGE = 'http://127.0.0.1:6969';
 
-  // @grant GM_xmlhttpRequest sandboxes us, so page globals live on unsafeWindow.
+  // The userscript sandbox means page globals live on unsafeWindow.
   const W = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
   // State shape: github.com/WavezFM/WavezFM-Extension-API
@@ -46,7 +46,7 @@
       listeners: room.activeUsersCount || null,
       image: pb ? pb.thumbnailUrl : null,
       url: slug ? `https://wavez.fm/~/${slug}` : location.href.split('#')[0],
-      startedAt: pb ? pb.startedAtServerMs : null, // server epoch ms
+      startedAt: pb ? pb.startedAtServerMs : null,
       durationMs: pb ? pb.durationMs : null,
       isLive: pb ? !!pb.isLive : false,
       paused: pb ? !!pb.paused : false,
@@ -57,7 +57,6 @@
   function push() {
     const snap = snapshot();
     if (!snap) { console.log('[wz-presence] no room state yet (not in a room, or bridge not loaded)'); return; }
-    // Skip identical resends except the periodic heartbeat below.
     const key = JSON.stringify(snap);
     if (key === last) return;
     last = key;
@@ -77,7 +76,7 @@
     api.room.subscribe('playback_changed', push);
     api.room.subscribe('room_changed', push);
   }
-  // Heartbeat: resend every 15s so a bridge started after the page still syncs (last-key guard makes this a no-op when nothing changed... except we reset it here so a late bridge gets one refresh).
+  // Heartbeat: clearing `last` forces a resend, so a bridge started after the page still syncs.
   setInterval(() => { last = ''; push(); }, 15000);
   push();
 
