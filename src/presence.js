@@ -24,7 +24,7 @@ const http = require('http');
 const { Client } = require('@xhayper/discord-rpc');
 const config = require('./config.js');
 const { trackMetadata } = require('./metadata.js');
-const { albumArt, lastfmEnabled } = require('./artwork.js');
+const { albumArt, sameArtist, lastfmEnabled } = require('./artwork.js');
 const { log, warn } = require('./log.js');
 
 // Shared wavez.fm Rich Presence app. An application id is a public identifier, not a secret.
@@ -77,9 +77,15 @@ async function apply(status) {
   }
 
   const url = /^https?:\/\//.test(status.url || '') ? status.url : null;
-  const { artist: parsed, title } = trackMetadata(status);
+  let { artist: parsed, title, ambiguous } = trackMetadata(status);
 
   const found = await albumArt(parsed, title);
+  // "LOVABLE - ELIZA" is a song then an artist, and the channel name didn't say which way round.
+  // The lookup ignores word order, so whoever it credits settles it, and names them better than
+  // the uploader did ("Black Eyed Peas", not "The Black Eyed Peas").
+  if (ambiguous && sameArtist(found.match, title) && !sameArtist(found.match, parsed)) {
+    [parsed, title] = [String(found.match), parsed];
+  }
   if (last !== status) return; // a newer track landed while we were fetching, let it win
   const artist = found.artist || parsed;
 

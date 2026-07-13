@@ -6,10 +6,11 @@ const { trackMetadata } = require('../src/metadata.js');
 // The "Artist - Title" split only applies to YouTube, where the uploader is a channel rather
 // than the artist. Elsewhere (SoundCloud) the metadata is already correct and a dash in the
 // title is just a dash.
+// `ambiguous` is asserted on its own below, so the name cases stay readable.
 /** @param {string} track @param {string} [artist] */
-const yt = (track, artist) => trackMetadata({ track, artist, source: 'youtube' });
+const yt = (track, artist) => { const { artist: a, title } = trackMetadata({ track, artist, source: 'youtube' }); return { artist: a, title }; };
 /** @param {string} track @param {string} [artist] */
-const sc = (track, artist) => trackMetadata({ track, artist, source: 'soundcloud' });
+const sc = (track, artist) => { const { artist: a, title } = trackMetadata({ track, artist, source: 'soundcloud' }); return { artist: a, title }; };
 
 // Uploader is a channel, not the artist. The title wins.
 assert.deepStrictEqual(
@@ -21,6 +22,14 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
   yt('Crystal Castles - Vanished', 'Crystal Castles - Topic'),
   { artist: 'Crystal Castles', title: 'Vanished' });
+
+// Some uploads are "Song - Artist". The channel name says which half is the artist.
+assert.deepStrictEqual(
+  yt('LOVABLE - ELIZA', 'ELIZA'),
+  { artist: 'ELIZA', title: 'LOVABLE' });
+assert.deepStrictEqual(
+  yt('LOVABLE - ELIZA (Official Video)', 'ELIZA - Topic'),
+  { artist: 'ELIZA', title: 'LOVABLE' });
 
 // Upload noise is dropped, whatever the phrasing or bracket style.
 assert.deepStrictEqual(
@@ -94,5 +103,13 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
   yt('Aphex Twin - Xtal', undefined),
   { artist: 'Aphex Twin', title: 'Xtal' });
+
+// A channel that matches neither half leaves the order unproven, so presence.js checks it against the artwork lookup.
+const ambiguity = (/** @type {string} */ track, /** @type {string} */ artist) =>
+  trackMetadata({ track, artist, source: 'youtube' }).ambiguous;
+assert.strictEqual(ambiguity('Ruby My Dear - Jit Thin', 'The Amen Connection'), true);
+assert.strictEqual(ambiguity('LOVABLE - ELIZA', 'ELIZA'), false);
+assert.strictEqual(ambiguity('Radiohead - Creep [Official Audio]', 'Radiohead'), false);
+assert.strictEqual(ambiguity('Bohemian Rhapsody', 'Queen'), false);
 
 console.log('trackMetadata(): all cases pass');

@@ -2,7 +2,7 @@
 // The network is stubbed, so this runs offline and needs no API key.
 // Run: npm test
 const assert = require('assert');
-const { fetchLastFmArtwork } = require('../src/artwork.js');
+const { fetchLastFmArtwork, sameArtist } = require('../src/artwork.js');
 
 const PLACEHOLDER = 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png';
 
@@ -26,12 +26,12 @@ const images = (url) => [
   // The largest usable image wins, not the first one listed.
   assert.deepStrictEqual(
     await get({ name: 'Creep', artist: { name: 'Radiohead' }, album: { image: images(ART) } }),
-    { art: ART, artist: 'Radiohead' });
+    { art: ART, artist: 'Radiohead', match: 'Radiohead' });
   
   // Last.fm serves art over plain http; Discord's proxy wants https.
   assert.deepStrictEqual(
     await get({ name: 'Creep', artist: { name: 'Radiohead' }, album: { image: images(ART.replace('https:', 'http:')) } }),
-    { art: ART, artist: 'Radiohead' });
+    { art: ART, artist: 'Radiohead', match: 'Radiohead' });
   
   // Last.fm returns a star placeholder rather than nothing when it has no cover. That is a miss.
   assert.strictEqual(
@@ -54,15 +54,26 @@ const images = (url) => [
   // Punctuation, case, and accents are not real differences. These are still the right track.
   assert.deepStrictEqual(
     await get({ name: 'Hoppipolla', artist: { name: 'Sigur Rós' }, album: { image: images(ART) } }, 'sigur ros', 'Hoppípolla'),
-    { art: ART, artist: 'Sigur Rós' });
+    { art: ART, artist: 'Sigur Rós', match: 'Sigur Rós' });
   assert.deepStrictEqual(
     await get({ name: 'Get Lucky', artist: { name: 'Daft Punk' }, album: { image: images(ART) } }, 'daft-punk', 'get lucky'),
-    { art: ART, artist: 'Daft Punk' });
+    { art: ART, artist: 'Daft Punk', match: 'Daft Punk' });
   
   // A dead key throws, so albumArt() can catch it and fall back to iTunes.
   await assert.rejects(
     fetchLastFmArtwork('Radiohead', 'Creep', { apiKey: 'bad', fetchImpl: fail(403) }),
     /HTTP 403/);
   
+  // sameArtist() decides which half of "LOVABLE - ELIZA" is the artist, by asking whether the
+  // name the provider credited looks like that half. A near miss still counts; a song title never does.
+  assert.ok(sameArtist('ELIZA', 'ELIZA'));
+  assert.ok(sameArtist('Black Eyed Peas', 'The Black Eyed Peas'));   // iTunes drops the "The"
+  assert.ok(sameArtist('Post Malone, Swae Lee', 'Post Malone'));     // credited with the feature
+  assert.ok(sameArtist('Sigur Rós', 'sigur ros'));
+  assert.ok(!sameArtist('ELIZA', 'LOVABLE'));
+  assert.ok(!sameArtist('The Black Eyed Peas', 'My Humps'));
+  assert.ok(!sameArtist('', 'Queen'));
+  assert.ok(!sameArtist(undefined, 'Queen'));
+
   console.log('fetchLastFmArtwork(): all cases pass');
 })();
