@@ -38,6 +38,19 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
   yt('Gorillaz - Feel Good Inc. (Official Video) [4K]', 'GorillazVEVO'),
   { artist: 'Gorillaz', title: 'Feel Good Inc.' });
+// Promo tags are not always English.
+assert.deepStrictEqual(
+  yt("ROZEDALE - Ce soir je t'aime (Clip officiel)", 'ROZEDALE'),
+  { artist: 'ROZEDALE', title: "Ce soir je t'aime" });
+assert.deepStrictEqual(
+  yt('Ado - うっせぇわ (公式ミュージックビデオ)', 'Ado'),
+  { artist: 'Ado', title: 'うっせぇわ' });
+assert.deepStrictEqual(
+  yt('NewJeans - Ditto (공식 영상)', 'HYBE LABELS'),
+  { artist: 'NewJeans', title: 'Ditto' });
+assert.deepStrictEqual(
+  yt('Кино - Группа крови (Официальный клип)', 'Kino'),
+  { artist: 'Кино', title: 'Группа крови' });
 // A remaster year is a real edition, not upload noise, so it stays.
 assert.deepStrictEqual(
   yt('Radiohead - Creep (Remastered 2011)', 'Radiohead'),
