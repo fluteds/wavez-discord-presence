@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         Wavez Discord Presence
 // @namespace    https://wavez.fm/
+// @author       fluteds
 // @icon         https://wavez.fm/favicon.ico
-// @version      1.5.0
+// @version      1.5.1
 // @description  Sends your wavez.fm room, track, artist, DJ and listener count to a local bridge that shows it as Discord Rich Presence.
 // @homepageURL  https://github.com/fluteds/wavez-discord-presence
 // @downloadURL  https://raw.githubusercontent.com/fluteds/wavez-discord-presence/main/wavez-discord-presence.user.js
 // @updateURL    https://raw.githubusercontent.com/fluteds/wavez-discord-presence/main/wavez-discord-presence.user.js
 // @match        https://wavez.fm/*
-// @match        https://wavez.fm/~/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @connect      127.0.0.1
@@ -79,9 +79,4 @@
   // Heartbeat: clearing `last` forces a resend, so a bridge started after the page still syncs.
   setInterval(() => { last = ''; push(); }, 15000);
   push();
-
-  if (location.hash === '#wz-presence-debug') {
-    console.log('[wz-presence] state:', W.WavezFM?.room?.getState());
-    console.log('[wz-presence] snapshot:', snapshot());
-  }
 })();

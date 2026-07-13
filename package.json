@@ -1,6 +1,6 @@
 {
   "name": "wavez-discord-presence",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Local bridge that shows your currently playing wavez.fm tracks/status as Discord Rich Presence.",
   "license": "MIT",
   "main": "src/presence.js",
