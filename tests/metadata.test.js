@@ -87,6 +87,17 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
   yt('Fiona Apple - Not About Love #1', 'FionaAppleVEVO'),
   { artist: 'Fiona Apple', title: 'Not About Love #1' });
+// Festival uploads tag the set. A run of them goes, from either side of the dash.
+assert.deepStrictEqual(
+  yt('Carpenter Brut - Maniac #polandrock2023', 'Pol\'and\'Rock Festival'),
+  { artist: 'Carpenter Brut', title: 'Maniac' });
+assert.deepStrictEqual(
+  yt('Carpenter Brut #polandrock2023 - Maniac #live #2023', 'Pol\'and\'Rock Festival'),
+  { artist: 'Carpenter Brut', title: 'Maniac' });
+// A song that is nothing but a hashtag keeps it, or there would be no title left.
+assert.deepStrictEqual(
+  yt('The Chainsmokers - #SELFIE', 'ChainsmokersVEVO'),
+  { artist: 'The Chainsmokers', title: '#SELFIE' });
 
 // Already-clean metadata (SoundCloud) survives untouched, dash and all.
 assert.deepStrictEqual(
