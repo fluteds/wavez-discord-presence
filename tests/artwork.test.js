@@ -2,7 +2,7 @@
 // The network is stubbed, so this runs offline and needs no API key.
 // Run: npm test
 const assert = require('assert');
-const { fetchLastFmArtwork, sameArtist } = require('../src/artwork.js');
+const { fetchLastFmArtwork, sameArtist, trimsArtist } = require('../src/artwork.js');
 
 const PLACEHOLDER = 'https://lastfm.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png';
 
@@ -74,6 +74,14 @@ const images = (url) => [
   assert.ok(!sameArtist('The Black Eyed Peas', 'My Humps'));
   assert.ok(!sameArtist('', 'Queen'));
   assert.ok(!sameArtist(undefined, 'Queen'));
+
+  // trimsArtist() cuts the album back off the artist, but only ever shortens it.
+  assert.ok(trimsArtist('Daft Punk', 'Daft Punk Alive 2007'));
+  assert.ok(!trimsArtist('Daft Punk', 'Daft Punk'));
+  assert.ok(!trimsArtist('Calvin Harris & Dua Lipa', 'Calvin Harris'));  // a longer credit is not a trim
+  assert.ok(!trimsArtist('Beatles', 'The Beatles'));                     // not the head of the name
+  assert.ok(!trimsArtist('MGMT', 'Justice'));
+  assert.ok(!trimsArtist('', 'Queen'));
 
   console.log('fetchLastFmArtwork(): all cases pass');
 })();

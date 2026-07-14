@@ -24,7 +24,7 @@ const http = require('http');
 const { Client } = require('@xhayper/discord-rpc');
 const config = require('./config.js');
 const { trackMetadata } = require('./metadata.js');
-const { albumArt, sameArtist, lastfmEnabled } = require('./artwork.js');
+const { albumArt, sameArtist, trimsArtist, lastfmEnabled } = require('./artwork.js');
 const { log, warn } = require('./log.js');
 
 // Shared wavez.fm Rich Presence app. An application id is a public identifier, not a secret.
@@ -87,7 +87,8 @@ async function apply(status) {
     [parsed, title] = [String(found.match), parsed];
   }
   if (last !== status) return; // a newer track landed while we were fetching, let it win
-  const artist = found.artist || parsed;
+  // "Daft Punk Alive 2007" is the artist with the album stuck on the end. The lookup credits "Daft Punk", so use that.
+  const artist = found.artist || (trimsArtist(found.match, parsed) ? String(found.match) : parsed);
 
   // "Crystal Castles • DJ f5."
   const line2 = [

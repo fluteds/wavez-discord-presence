@@ -113,6 +113,14 @@ function sameArtist(a, b) {
   if (!x || !y) return false;
   return x === y || (x.length >= 4 && y.includes(x)) || (y.length >= 4 && x.includes(y));
 }
+// Full-album rips glue the album onto the artist ("Daft Punk Alive 2007 - Touch It / Technologic").
+// The provider knows the real name, so take it when it's only the head of what the title gave us.
+// Head only, never a longer credit, so a loose match can't relabel the track as someone else.
+/** @param {unknown} match @param {unknown} artist */
+function trimsArtist(match, artist) {
+  const [m, a] = [identity(match), identity(artist)];
+  return m.length >= 4 && m !== a && a.startsWith(m);
+}
 const BRACKETED_SUFFIX = /\s*[[(][^)\]]*[)\]]\s*$/;
 
 /** @param {string} artist @param {string} track @returns {Promise<Artwork>} */
@@ -153,4 +161,4 @@ async function albumArt(artist, track) {
   }
 }
 
-module.exports = { albumArt, fetchLastFmArtwork, sameArtist, lastfmEnabled: Boolean(LASTFM_KEY) };
+module.exports = { albumArt, fetchLastFmArtwork, sameArtist, trimsArtist, lastfmEnabled: Boolean(LASTFM_KEY) };
