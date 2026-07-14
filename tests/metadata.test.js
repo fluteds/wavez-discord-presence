@@ -3,9 +3,7 @@
 const assert = require('assert');
 const { trackMetadata } = require('../src/metadata.js');
 
-// The "Artist - Title" split only applies to YouTube, where the uploader is a channel rather
-// than the artist. Elsewhere (SoundCloud) the metadata is already correct and a dash in the
-// title is just a dash.
+// The split is YouTube-only, where the uploader is a channel. On SoundCloud a dash is just a dash.
 // `ambiguous` is asserted on its own below, so the name cases stay readable.
 /** @param {string} track @param {string} [artist] */
 const yt = (track, artist) => { const { artist: a, title } = trackMetadata({ track, artist, source: 'youtube' }); return { artist: a, title }; };

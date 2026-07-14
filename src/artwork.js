@@ -1,10 +1,7 @@
 // @ts-check
 // wavez only sends the video thumbnail, so real cover art is looked up by artist + track.
-//
-// Last.fm is the better source, but it needs an API key, so it's only used when one is
-// configured (a from-source thing). Without a key, iTunes answers unauthenticated and is
-// what everyone running `npx` gets. Misses are cached too, so they aren't retried every
-// heartbeat, but only for an hour, so a track that gets tagged later can still be found.
+// Last.fm is better but needs a key; iTunes needs none, so it's what `npx` users get.
+// Misses are cached for an hour, so a track tagged later can still be found.
 
 const { warn } = require('./log.js');
 const config = require('./config.js');
@@ -16,14 +13,13 @@ const LASTFM_PLACEHOLDER_HASH = '2a96cbd8b46e442fc41c2b86b821562f';
 const LASTFM_KEY = process.env.LASTFM_API_KEY || config.lastfmKey || '';
 
 /** @typedef {{ art: string | null, artist?: string, match?: string }} Artwork */
-// artist: the provider's name for the artist we asked about, only when it agrees, so it is safe to display.
-// match: whoever the provider actually answered with, agreeing or not. Only good for asking "which half of this title is the artist?".
+// artist: the provider's name for the artist we asked about, only when it agrees. Safe to display.
+// match: whoever it answered with, agreeing or not. Only good for guessing which half is the artist.
 
 /** @param {unknown} value */
 const text = (value) => String(value || '').trim();
 
-// Compares names across punctuation, case, and accents, so "Sigur Rós" matches "sigur ros"
-// but a genuinely different artist never does.
+// Compares names across punctuation, case, and accents: "Sigur Rós" matches "sigur ros", a different artist never does.
 /** @param {unknown} value */
 const identity = (value) => text(value)
   .normalize('NFKD')
@@ -39,7 +35,6 @@ const MISS_TTL = 3600000;
 
 /** @param {string} key @param {Artwork} found */
 function store(key, found) {
-  // ponytail: insertion-order eviction, not true LRU. Swap if the hit rate ever matters.
   if (!cache.has(key) && cache.size >= CACHE_MAX) {
     const oldest = cache.keys().next().value;
     if (oldest) cache.delete(oldest);
@@ -48,11 +43,8 @@ function store(key, found) {
   return found;
 }
 
-/**
- * @param {string} artist @param {string} title
- * @param {{ apiKey?: string, fetchImpl?: typeof fetch }} [options]
- * @returns {Promise<Artwork | undefined>} undefined when Last.fm has nothing usable
- */
+// undefined when Last.fm has nothing usable
+/** @param {string} artist @param {string} title @param {{ apiKey?: string, fetchImpl?: typeof fetch }} [options] @returns {Promise<Artwork | undefined>} */
 async function fetchLastFmArtwork(artist, title, { apiKey = LASTFM_KEY, fetchImpl = fetch } = {}) {
   const params = new URLSearchParams({
     method: 'track.getInfo',
@@ -70,8 +62,7 @@ async function fetchLastFmArtwork(artist, title, { apiKey = LASTFM_KEY, fetchImp
   const data = await response.json();
   const returnedArtist = data?.track?.artist?.name;
   const returnedTitle = data?.track?.name;
-  // autocorrect=1 fixes typos, but it also happily answers with a different song. Only trust
-  // the result when it's still the track we asked about.
+  // autocorrect=1 fixes typos but also answers with a different song. Only trust the track we asked for.
   if ((returnedArtist && identity(returnedArtist) !== identity(artist)) ||
       (returnedTitle && identity(returnedTitle) !== identity(title))) {
     return undefined;
@@ -83,10 +74,7 @@ async function fetchLastFmArtwork(artist, title, { apiKey = LASTFM_KEY, fetchImp
   return { art: image.replace(/^http:/, 'https:'), artist: returnedArtist || undefined, match: returnedArtist || undefined };
 }
 
-/**
- * @param {string} artist @param {string} title
- * @returns {Promise<Artwork>}
- */
+/** @param {string} artist @param {string} title @returns {Promise<Artwork>} */
 async function fetchItunesArtwork(artist, title) {
   const term = encodeURIComponent(`${artist} ${title}`);
   const res = await fetch(`https://itunes.apple.com/search?media=music&limit=1&term=${term}`, {
@@ -98,24 +86,19 @@ async function fetchItunesArtwork(artist, title) {
 
   /** @type {Artwork} */
   const found = { art: top.artworkUrl100?.replace('100x100', '512x512') || null, match: top.artistName || undefined };
-  // Take iTunes' casing ("LCD Soundsystem" over "lcdsoundsystem"), but only on the same
-  // artist, so a bad match can never relabel the track as someone else.
+  // Take iTunes' casing ("LCD Soundsystem"), but only on the same artist, so a bad match can't relabel it.
   if (top.artistName && identity(top.artistName) === identity(artist)) found.artist = top.artistName;
   return found;
 }
 
-// Looser than identity(): iTunes answers "Black Eyed Peas" for The Black Eyed Peas, and credits
-// "Calvin Harris & Dua Lipa" where the title says one of them. Close enough to tell an artist
-// name apart from a song name, which is all this is used for.
+// Looser than identity(): iTunes drops "The" and adds featured credits. Close enough to tell an artist from a song.
 /** @param {unknown} a @param {unknown} b */
 function sameArtist(a, b) {
   const [x, y] = [identity(a), identity(b)];
   if (!x || !y) return false;
   return x === y || (x.length >= 4 && y.includes(x)) || (y.length >= 4 && x.includes(y));
 }
-// Full-album rips glue the album onto the artist ("Daft Punk Alive 2007 - Touch It / Technologic").
-// The provider knows the real name, so take it when it's only the head of what the title gave us.
-// Head only, never a longer credit, so a loose match can't relabel the track as someone else.
+// Album rips glue the album onto the artist ("Daft Punk Alive 2007"). Head only, so a loose match can't relabel the track.
 /** @param {unknown} match @param {unknown} artist */
 function trimsArtist(match, artist) {
   const [m, a] = [identity(match), identity(artist)];
@@ -136,10 +119,7 @@ async function lookup(artist, track) {
   return fetchItunesArtwork(artist, track);
 }
 
-/**
- * @param {string} [artist] @param {string} [track]
- * @returns {Promise<Artwork>}
- */
+/** @param {string} [artist] @param {string} [track] @returns {Promise<Artwork>} */
 async function albumArt(artist, track) {
   if (!artist || !track) return { art: null };
 

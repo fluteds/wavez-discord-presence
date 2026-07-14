@@ -80,14 +80,12 @@ async function apply(status) {
   let { artist: parsed, title, ambiguous } = trackMetadata(status);
 
   const found = await albumArt(parsed, title);
-  // "LOVABLE - ELIZA" is a song then an artist, and the channel name didn't say which way round.
-  // The lookup ignores word order, so whoever it credits settles it, and names them better than
-  // the uploader did ("Black Eyed Peas", not "The Black Eyed Peas").
+  // "LOVABLE - ELIZA" is song then artist and the channel didn't say. The lookup ignores order, so its credit settles it.
   if (ambiguous && sameArtist(found.match, title) && !sameArtist(found.match, parsed)) {
     [parsed, title] = [String(found.match), parsed];
   }
   if (last !== status) return; // a newer track landed while we were fetching, let it win
-  // "Daft Punk Alive 2007" is the artist with the album stuck on the end. The lookup credits "Daft Punk", so use that.
+  // "Daft Punk Alive 2007" is the artist with the album stuck on. The lookup credits "Daft Punk", so use that.
   const artist = found.artist || (trimsArtist(found.match, parsed) ? String(found.match) : parsed);
 
   // "Crystal Castles • DJ f5."
