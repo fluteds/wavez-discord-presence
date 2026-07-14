@@ -81,6 +81,15 @@ assert.deepStrictEqual(
   yt('Arctic Monkeys - 505 (Official Live Video)', 'ArcticMonkeysVEVO'),
   { artist: 'Arctic Monkeys', title: '505 (Live)' });
 
+// Full-album rips number their tracks. The album stuck to the artist is left for the lookup to trim.
+assert.deepStrictEqual(
+  yt('Daft Punk Alive 2007 - Touch It / Technologic #02', 'concert uploads'),
+  { artist: 'Daft Punk Alive 2007', title: 'Touch It / Technologic' });
+// A single digit is part of the song's name, not an index.
+assert.deepStrictEqual(
+  yt('Fiona Apple - Not About Love #1', 'FionaAppleVEVO'),
+  { artist: 'Fiona Apple', title: 'Not About Love #1' });
+
 // Already-clean metadata (SoundCloud) survives untouched, dash and all.
 assert.deepStrictEqual(
   sc('A Little Piece Of Heaven', 'Avenged Sevenfold'),
