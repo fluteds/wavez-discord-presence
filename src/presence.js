@@ -91,7 +91,7 @@ async function apply(status) {
   // "Crystal Castles • DJ f5."
   const line2 = [
     artist,
-    status.dj && `DJ ${status.dj}`,
+    // status.dj && `DJ ${status.dj}`,
   ].filter(Boolean).join(' • ');
   // "harkach • 5 listeners". Discord renders largeImageText as its own line.
   const line3 = [
@@ -166,7 +166,7 @@ function connect() {
     .then(() => { connecting = false; })
     .catch((e) => {
       connecting = false;
-      warn(`⚠️  Discord unreachable (is the desktop app running?): ${e.message} - retrying in 10s`);
+      warn(`⚠️ Discord unreachable (is the desktop app running?): ${e.message} - retrying in 10s`);
       setTimeout(connect, 10000);
     });
 }
@@ -198,7 +198,7 @@ http.createServer((req, res) => {
   process.exit(1);
 }).listen(PORT, () => {
   log(`🎧 wavez presence bridge listening on :${PORT}`);
-  log(`🎨 cover art: ${lastfmEnabled ? 'Last.fm (iTunes on a miss)' : 'iTunes (set lastfmKey to use Last.fm)'}`);
+  log(`🎨 cover art source: ${lastfmEnabled ? 'Last.fm (iTunes on fallback)' : 'iTunes (set lastfmKey to use Last.fm)'}`);
 });
 
 connect();
