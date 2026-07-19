@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // @ts-check
-// wavez.fm -> Discord Rich Presence bridge. The userscript POSTs room/track here; this forwards it to Discord's IPC socket.
+// wavez.fm -> Discord Rich Presence bridge. The userscript (or wavez-cli) POSTs room/track here; this forwards it to Discord's IPC socket.
 
 /**
  * @typedef {object} Status
@@ -18,6 +18,7 @@
  * @property {number}  [startedAt]  - epoch seconds
  * @property {number}  [durationMs]
  * @property {boolean} [isLive]
+ * @property {string}  [client]  - which front end sent this; absent means the userscript
  */
 
 const http = require('http');
@@ -57,13 +58,30 @@ const client = new Client({ clientId: APP_ID });
 let ready = false;
 /** @type {Status | null} */
 let last = null;         // most recent status; replayed when Discord reconnects
-let lastSeen = 0;        // Date.now() of the last userscript POST
+let lastSeen = 0;        // Date.now() of the owner's last POST
 let cleared = false;
 let applied = '';        // signature of what's on Discord now, to skip repeat heartbeats
+let owner = '';          // the client currently driving Discord; '' = up for grabs
 const STALE_MS = 40000;  // no heartbeat this long = wavez closed, clear presence
+
+// A browser tab and a CLI session can both be posting. Without this they trade Discord back and forth every few seconds, and the one sitting outside a room clears the one that's playing. First to play owns it; ownership ends when that client stops playing or goes quiet for STALE_MS.
+/** @param {Status} status @returns {boolean} true if this client may drive Discord */
+function owns(status) {
+  const from = status?.client || 'userscript';
+  const held = owner && owner !== from && Date.now() - lastSeen < STALE_MS;
+  if (held) return false;
+  if (status?.playing && !status.paused) {
+    if (owner !== from) log(`🎛  presence from ${from}`);
+    owner = from;
+    return true;
+  }
+  owner = ''; // this client stopped: let the other one take over on its next post
+  return true;
+}
 
 /** @param {Status} status */
 async function apply(status) {
+  if (!owns(status)) return;
   last = status; lastSeen = Date.now(); cleared = false;
   if (!ready) {
     if (applied !== 'queued') { log('⏳ queued - waiting for Discord'); applied = 'queued'; }
@@ -181,6 +199,7 @@ setInterval(() => {
   client.user?.clearActivity().catch((e) => warn('clearActivity failed:', e.message));
   applied = 'clear';
   cleared = true;
+  owner = ''; // the owner vanished (tab closed, terminal killed), so the other client can claim it
 }, 15000);
 
 http.createServer((req, res) => {
@@ -189,7 +208,7 @@ http.createServer((req, res) => {
   req.on('data', (c) => (body += c));
   req.on('end', () => {
     try { apply(JSON.parse(body)).catch((e) => warn('apply failed:', e.message)); res.writeHead(204).end(); }
-    catch (e) { warn('bad POST from userscript:', e instanceof Error ? e.message : e); res.writeHead(400).end('bad json'); }
+    catch (e) { warn('bad POST:', e instanceof Error ? e.message : e); res.writeHead(400).end('bad json'); }
   });
 }).on('error', (e) => {
   // @ts-ignore - code exists on Node's system errors

@@ -36,6 +36,7 @@
     const playing = !!(pb && pb.title && !pb.paused);
 
     return {
+      client: 'userscript', // the bridge uses this to arbitrate when wavez-cli is posting too
       playing,
       track: pb ? pb.title : null,
       artist: pb ? pb.artist : null,
