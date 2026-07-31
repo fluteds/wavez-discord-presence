@@ -16,7 +16,7 @@
   },
   "scripts": {
     "start": "node src/presence.js",
-    "test": "node tests/metadata.test.js && node tests/artwork.test.js",
+    "test": "node tests/metadata.test.js && node tests/artwork.test.js && node tests/arbiter.test.js && node tests/port.test.js",
     "version": "node -e \"const f='wavez-discord-presence.user.js',fs=require('fs'),v=require('./package.json').version;fs.writeFileSync(f,fs.readFileSync(f,'utf8').replace(/(@version\\s+)[\\d.]+/,(m,p)=>p+v));console.log('userscript @version -> '+v)\" && git add wavez-discord-presence.user.js"
   },
   "keywords": [
@@ -35,7 +35,7 @@
   "dependencies": {
     "@xhayper/discord-rpc": "^1.2.0"
   },
-  "//overrides": "@discordjs/rest pins undici to an exact 6.24.1, which is under the <=6.26.0 advisories. Drop this once it ships a version that asks for 6.27.0 itself.",
+  "//overrides": "The pinned @discordjs/rest@2.6.1 (via @xhayper/discord-rpc) hard-requires undici 6.24.1, which is under the <=6.26.0 advisories; this lifts it to a patched 6.27.x. @discordjs/rest@2.6.3 already asks for ^6.27.0 itself, so drop this override once the lockfile resolves @discordjs/rest >=2.6.3 (bump @xhayper/discord-rpc). npm audit is clean with the override in place.",
   "overrides": {
     "undici": "^6.28.0"
   }

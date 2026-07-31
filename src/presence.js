@@ -26,6 +26,7 @@ const { Client } = require('@xhayper/discord-rpc');
 const config = require('./config.js');
 const { trackMetadata } = require('./metadata.js');
 const { albumArt, sameArtist, trimsArtist, lastfmEnabled } = require('./artwork.js');
+const { Arbiter } = require('./arbiter.js');
 const { log, warn } = require('./log.js');
 
 // Shared wavez.fm Rich Presence app. An application id is a public identifier, not a secret.
@@ -58,31 +59,18 @@ const client = new Client({ clientId: APP_ID });
 let ready = false;
 /** @type {Status | null} */
 let last = null;         // most recent status; replayed when Discord reconnects
-let lastSeen = 0;        // Date.now() of the owner's last POST
 let cleared = false;
 let applied = '';        // signature of what's on Discord now, to skip repeat heartbeats
-let owner = '';          // the client currently driving Discord; '' = up for grabs
 const STALE_MS = 40000;  // no heartbeat this long = wavez closed, clear presence
-
-// A browser tab and a CLI session can both be posting. Without this they trade Discord back and forth every few seconds, and the one sitting outside a room clears the one that's playing. First to play owns it; ownership ends when that client stops playing or goes quiet for STALE_MS.
-/** @param {Status} status @returns {boolean} true if this client may drive Discord */
-function owns(status) {
-  const from = status?.client || 'userscript';
-  const held = owner && owner !== from && Date.now() - lastSeen < STALE_MS;
-  if (held) return false;
-  if (status?.playing && !status.paused) {
-    if (owner !== from) log(`🎛  presence from ${from}`);
-    owner = from;
-    return true;
-  }
-  owner = ''; // this client stopped: let the other one take over on its next post
-  return true;
-}
+// A browser tab and a CLI session can both be posting; the arbiter decides which one drives Discord.
+const arbiter = new Arbiter(STALE_MS);
 
 /** @param {Status} status */
 async function apply(status) {
-  if (!owns(status)) return;
-  last = status; lastSeen = Date.now(); cleared = false;
+  const prevOwner = arbiter.owner;
+  if (!arbiter.owns(status)) return;
+  if (arbiter.owner && arbiter.owner !== prevOwner) log(`🎛  presence from ${arbiter.owner}`);
+  last = status; arbiter.touch(); cleared = false;
   if (!ready) {
     if (applied !== 'queued') { log('⏳ queued - waiting for Discord'); applied = 'queued'; }
     return;
@@ -165,7 +153,7 @@ client.on('ready', () => {
   ready = true;
   applied = ''; // force a re-push after (re)connect
   log(`✅ connected to Discord as ${client.user?.username}`);
-  if (last && Date.now() - lastSeen < STALE_MS) apply(last).catch((e) => warn('apply failed:', e.message));
+  if (last && !arbiter.isStale()) apply(last).catch((e) => warn('apply failed:', e.message));
   else client.user?.clearActivity().catch(() => {});
 });
 
@@ -192,14 +180,14 @@ function connect() {
 // wavez closed: clear the presence once the heartbeat goes stale.
 setInterval(() => {
   if (!ready) return;
-  if (last && Date.now() - lastSeen <= STALE_MS) return;
+  if (last && !arbiter.isStale()) return;
   if (cleared) return;
-  const gone = Math.round((Date.now() - lastSeen) / 1000);
+  const gone = Math.round((Date.now() - arbiter.lastSeen) / 1000);
   log(`💤 no heartbeat from wavez for ${gone}s - discord presence cleared`);
   client.user?.clearActivity().catch((e) => warn('clearActivity failed:', e.message));
   applied = 'clear';
   cleared = true;
-  owner = ''; // the owner vanished (tab closed, terminal killed), so the other client can claim it
+  arbiter.release(); // the owner vanished (tab closed, terminal killed), so the other client can claim it
 }, 15000);
 
 http.createServer((req, res) => {
@@ -215,7 +203,7 @@ http.createServer((req, res) => {
   if (e.code === 'EADDRINUSE') warn(`⚠️  port ${PORT} is busy - is the bridge already running? Set PORT to use another.`);
   else warn('server error:', e.message);
   process.exit(1);
-}).listen(PORT, () => {
+}).listen(PORT, '127.0.0.1', () => { // loopback only: the userscript/CLI post locally, no reason to expose the bridge to the LAN
   log(`🎧 wavez presence bridge listening on :${PORT}`);
   log(`🎨 cover art source: ${lastfmEnabled ? 'Last.fm (iTunes on fallback)' : 'iTunes (set lastfmKey to use Last.fm)'}`);
 });
