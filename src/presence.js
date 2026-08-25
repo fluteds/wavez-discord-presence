@@ -29,7 +29,6 @@ const { albumArt, sameArtist, trimsArtist, lastfmEnabled } = require('./artwork.
 const { Arbiter } = require('./arbiter.js');
 const { log, warn } = require('./log.js');
 
-// Shared wavez.fm Rich Presence app. An application id is a public identifier, not a secret.
 const DEFAULT_APP_ID = '1522376776536428655';
 
 const APP_ID = process.env.DISCORD_APP_ID || config.appId || DEFAULT_APP_ID;
@@ -60,9 +59,8 @@ let ready = false;
 /** @type {Status | null} */
 let last = null;         // most recent status; replayed when Discord reconnects
 let cleared = false;
-let applied = '';        // signature of what's on Discord now, to skip repeat heartbeats
+let applied = '';        // what's on Discord now, to skip repeat heartbeats
 const STALE_MS = 40000;  // no heartbeat this long = wavez closed, clear presence
-// A browser tab and a CLI session can both be posting; the arbiter decides which one drives Discord.
 const arbiter = new Arbiter(STALE_MS);
 
 /** @param {Status} status */
@@ -86,15 +84,13 @@ async function apply(status) {
   let { artist: parsed, title, ambiguous } = trackMetadata(status);
 
   const found = await albumArt(parsed, title);
-  // "LOVABLE - ELIZA" is song then artist and the channel didn't say. The lookup ignores order, so its credit settles it.
   if (ambiguous && sameArtist(found.match, title) && !sameArtist(found.match, parsed)) {
     [parsed, title] = [String(found.match), parsed];
   }
-  if (last !== status) return; // a newer track landed while we were fetching, let it win
-  // "Daft Punk Alive 2007" is the artist with the album stuck on. The lookup credits "Daft Punk", so use that.
+  if (last !== status) return;
   const artist = found.artist || (trimsArtist(found.match, parsed) ? String(found.match) : parsed);
 
-  // "Crystal Castles • DJ f5."
+  // "Crystal Castles • DJ fluted."
   const line2 = [
     artist,
     // status.dj && `DJ ${status.dj}`,
@@ -104,7 +100,6 @@ async function apply(status) {
     status.room,
     status.listeners && `${status.listeners} listener${status.listeners === 1 ? '' : 's'}`,
   ].filter(Boolean).join(' • ');
-  // The API sends no source/sourceId, so infer from the artwork host.
   const img = status.image || '';
   let source = String(status.source || '').toLowerCase();
   if (!source) source = /sndcdn\.com/.test(img) ? 'soundcloud' : /ytimg\.com/.test(img) ? 'youtube' : '';
@@ -126,7 +121,7 @@ async function apply(status) {
     largeImageKey: image,
     buttons: buttons.length ? buttons : undefined,
   };
-  // No largeImageUrl: that field is a hyperlink on the artwork, not the image source.
+  // No largeImageUrl
   if (SOURCE_BADGES && status.isLive) { activity.smallImageKey = WAVEZ_ICON; activity.smallImageText = 'Live'; }
   else if (SOURCE_BADGES && src) { activity.smallImageKey = src.icon; activity.smallImageText = src.name; }
   else { activity.smallImageKey = WAVEZ_ICON; activity.smallImageText = 'wavez.fm'; }
@@ -187,7 +182,7 @@ setInterval(() => {
   client.user?.clearActivity().catch((e) => warn('clearActivity failed:', e.message));
   applied = 'clear';
   cleared = true;
-  arbiter.release(); // the owner vanished (tab closed, terminal killed), so the other client can claim it
+  arbiter.release();
 }, 15000);
 
 http.createServer((req, res) => {
@@ -203,7 +198,7 @@ http.createServer((req, res) => {
   if (e.code === 'EADDRINUSE') warn(`⚠️  port ${PORT} is busy - is the bridge already running? Set PORT to use another.`);
   else warn('server error:', e.message);
   process.exit(1);
-}).listen(PORT, '127.0.0.1', () => { // loopback only: the userscript/CLI post locally, no reason to expose the bridge to the LAN
+}).listen(PORT, '127.0.0.1', () => {
   log(`🎧 wavez presence bridge listening on :${PORT}`);
   log(`🎨 cover art source: ${lastfmEnabled ? 'Last.fm (iTunes on fallback)' : 'iTunes (set lastfmKey to use Last.fm)'}`);
 });
