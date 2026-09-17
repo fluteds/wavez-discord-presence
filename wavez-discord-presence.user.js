@@ -3,7 +3,7 @@
 // @namespace    https://wavez.fm/
 // @author       fluteds
 // @icon         https://wavez.fm/favicon.ico
-// @version      1.6.0
+// @version      1.6.1
 // @description  Sends your wavez.fm room, track, artist, DJ and listener count to a local bridge that shows it as Discord Rich Presence.
 // @homepageURL  https://github.com/fluteds/wavez-discord-presence
 // @downloadURL  https://raw.githubusercontent.com/fluteds/wavez-discord-presence/main/wavez-discord-presence.user.js
