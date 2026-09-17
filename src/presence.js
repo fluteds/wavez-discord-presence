@@ -167,6 +167,10 @@ function connect() {
     .then(() => { connecting = false; })
     .catch((e) => {
       connecting = false;
+      // a failed connect leaves a once('connected') behind and never clears its rejected promise, so retries would be no-ops
+      client.removeAllListeners('connected');
+      // @ts-ignore - private, but nothing else resets it
+      client.connectionPromise = undefined;
       warn(`⚠️ Discord unreachable (is the desktop app running?): ${e.message} - retrying in 10s`);
       setTimeout(connect, 10000);
     });
