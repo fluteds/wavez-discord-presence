@@ -1,6 +1,3 @@
-// Checks the arbitration that decides which front end drives Discord when both
-// a browser tab and wavez-cli are POSTing. Time is injected so staleness is
-// deterministic. Run: npm test
 const assert = require('assert');
 const { Arbiter } = require('../src/arbiter.js');
 
@@ -9,7 +6,6 @@ const playing = (client) => ({ client, playing: true, paused: false });
 const paused = (client) => ({ client, playing: false, paused: true });
 const stopped = (client) => ({ client, playing: false, paused: false });
 
-// First to play owns Discord; the other client is locked out while the owner is fresh.
 {
   const a = new Arbiter(STALE);
   assert.strictEqual(a.owns(playing('userscript'), 0), true, 'first playing client wins');
@@ -19,7 +15,6 @@ const stopped = (client) => ({ client, playing: false, paused: false });
   assert.strictEqual(a.owner, 'userscript', 'a rejected claim must not change the owner');
 }
 
-// A non-owner cannot clear the owner: the CLI sitting outside a room must not wipe a playing tab.
 {
   const a = new Arbiter(STALE);
   a.owns(playing('userscript'), 0); a.touch(0);
@@ -27,7 +22,6 @@ const stopped = (client) => ({ client, playing: false, paused: false });
   assert.strictEqual(a.owner, 'userscript', 'owner survives a non-owner stop');
 }
 
-// Source switching: the owner stopping hands control to the other client on its next post.
 {
   const a = new Arbiter(STALE);
   a.owns(playing('userscript'), 0); a.touch(0);
@@ -37,7 +31,6 @@ const stopped = (client) => ({ client, playing: false, paused: false });
   assert.strictEqual(a.owner, 'wavez-cli', 'the CLI now drives Discord');
 }
 
-// Pausing releases ownership too (documented behaviour: a paused owner yields).
 {
   const a = new Arbiter(STALE);
   a.owns(playing('userscript'), 0); a.touch(0);
@@ -45,7 +38,6 @@ const stopped = (client) => ({ client, playing: false, paused: false });
   assert.strictEqual(a.owner, '');
 }
 
-// Stale takeover: once the owner goes quiet past staleMs, the other client wins.
 {
   const a = new Arbiter(STALE);
   a.owns(playing('userscript'), 0); a.touch(0);
@@ -54,7 +46,6 @@ const stopped = (client) => ({ client, playing: false, paused: false });
   assert.strictEqual(a.owner, 'wavez-cli');
 }
 
-// isStale drives the reconnect replay and the cleanup interval.
 {
   const a = new Arbiter(STALE);
   a.touch(0);
@@ -62,7 +53,6 @@ const stopped = (client) => ({ client, playing: false, paused: false });
   assert.strictEqual(a.isStale(STALE + 1), true, 'past staleMs is stale');
 }
 
-// Rapid track changes from the same owner never lose ownership or flip it away.
 {
   const a = new Arbiter(STALE);
   for (let t = 0; t < 20; t++) {
@@ -72,7 +62,6 @@ const stopped = (client) => ({ client, playing: false, paused: false });
   }
 }
 
-// release() frees ownership so a vanished owner (tab closed) is replaced immediately.
 {
   const a = new Arbiter(STALE);
   a.owns(playing('userscript'), 0); a.touch(0);
@@ -81,7 +70,6 @@ const stopped = (client) => ({ client, playing: false, paused: false });
   assert.strictEqual(a.owns(playing('wavez-cli'), 1), true, 'the other client claims a released presence at once');
 }
 
-// A status with no client field is treated as the userscript (its documented default).
 {
   const a = new Arbiter(STALE);
   assert.strictEqual(a.owns({ playing: true }, 0), true);

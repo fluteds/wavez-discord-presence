@@ -1,16 +1,11 @@
-// Checks the title parser that turns YouTube's "channel + messy title" into artist/track.
-// Run: npm test
 const assert = require('assert');
 const { trackMetadata } = require('../src/metadata.js');
 
-// The split is YouTube-only, where the uploader is a channel. On SoundCloud a dash is just a dash.
-// `ambiguous` is asserted on its own below, so the name cases stay readable.
 /** @param {string} track @param {string} [artist] */
 const yt = (track, artist) => { const { artist: a, title } = trackMetadata({ track, artist, source: 'youtube' }); return { artist: a, title }; };
 /** @param {string} track @param {string} [artist] */
 const sc = (track, artist) => { const { artist: a, title } = trackMetadata({ track, artist, source: 'soundcloud' }); return { artist: a, title }; };
 
-// Uploader is a channel, not the artist. The title wins.
 assert.deepStrictEqual(
   yt('The Black Eyed Peas - My Humps', 'BlackEyedPeasVEVO'),
   { artist: 'The Black Eyed Peas', title: 'My Humps' });
@@ -21,7 +16,6 @@ assert.deepStrictEqual(
   yt('Crystal Castles - Vanished', 'Crystal Castles - Topic'),
   { artist: 'Crystal Castles', title: 'Vanished' });
 
-// Some uploads are "Song - Artist". The channel name says which half is the artist.
 assert.deepStrictEqual(
   yt('LOVABLE - ELIZA', 'ELIZA'),
   { artist: 'ELIZA', title: 'LOVABLE' });
@@ -29,7 +23,6 @@ assert.deepStrictEqual(
   yt('LOVABLE - ELIZA (Official Video)', 'ELIZA - Topic'),
   { artist: 'ELIZA', title: 'LOVABLE' });
 
-// Upload noise is dropped, whatever the phrasing or bracket style.
 assert.deepStrictEqual(
   yt('Rick Astley - Never Gonna Give You Up (Official Video)', 'RickAstleyVEVO'),
   { artist: 'Rick Astley', title: 'Never Gonna Give You Up' });
@@ -45,7 +38,6 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
   yt('Gorillaz - Feel Good Inc. (Official Video) [4K]', 'GorillazVEVO'),
   { artist: 'Gorillaz', title: 'Feel Good Inc.' });
-// Promo tags are not always English.
 assert.deepStrictEqual(
   yt("ROZEDALE - Ce soir je t'aime (Clip officiel)", 'ROZEDALE'),
   { artist: 'ROZEDALE', title: "Ce soir je t'aime" });
@@ -58,48 +50,39 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(
   yt('Кино - Группа крови (Официальный клип)', 'Kino'),
   { artist: 'Кино', title: 'Группа крови' });
-// A remaster year is a real edition, not upload noise, so it stays.
 assert.deepStrictEqual(
   yt('Radiohead - Creep (Remastered 2011)', 'Radiohead'),
   { artist: 'Radiohead', title: 'Creep (Remastered 2011)' });
 
-// Brackets carrying real information survive.
 assert.deepStrictEqual(
   yt('Queen - Bohemian Rhapsody (Live at Wembley)', 'QueenOfficial'),
   { artist: 'Queen', title: 'Bohemian Rhapsody (Live at Wembley)' });
 assert.deepStrictEqual(
   yt('Daft Punk - Get Lucky (feat. Pharrell Williams)', 'DaftPunkVEVO'),
   { artist: 'Daft Punk', title: 'Get Lucky (feat. Pharrell Williams)' });
-// A junk word is only junk inside brackets.
 assert.deepStrictEqual(
   yt('Lana Del Rey - Video Games', 'LanaDelReyVEVO'),
   { artist: 'Lana Del Rey', title: 'Video Games' });
-// An official live video is a live take, not upload noise.
 assert.deepStrictEqual(
   yt('Arctic Monkeys - 505 (Official Live Video)', 'ArcticMonkeysVEVO'),
   { artist: 'Arctic Monkeys', title: '505 (Live)' });
 
-// Full-album rips number their tracks. The album stuck to the artist is left for the lookup to trim.
 assert.deepStrictEqual(
   yt('Daft Punk Alive 2007 - Touch It / Technologic #02', 'concert uploads'),
   { artist: 'Daft Punk Alive 2007', title: 'Touch It / Technologic' });
-// A single digit is part of the song's name, not an index.
 assert.deepStrictEqual(
   yt('Fiona Apple - Not About Love #1', 'FionaAppleVEVO'),
   { artist: 'Fiona Apple', title: 'Not About Love #1' });
-// Festival uploads tag the set. A run of them goes, from either side of the dash.
 assert.deepStrictEqual(
   yt('Carpenter Brut - Maniac #polandrock2023', 'Pol\'and\'Rock Festival'),
   { artist: 'Carpenter Brut', title: 'Maniac' });
 assert.deepStrictEqual(
   yt('Carpenter Brut #polandrock2023 - Maniac #live #2023', 'Pol\'and\'Rock Festival'),
   { artist: 'Carpenter Brut', title: 'Maniac' });
-// A song that is nothing but a hashtag keeps it, or there would be no title left.
 assert.deepStrictEqual(
   yt('The Chainsmokers - #SELFIE', 'ChainsmokersVEVO'),
   { artist: 'The Chainsmokers', title: '#SELFIE' });
 
-// Already-clean metadata (SoundCloud) survives untouched, dash and all.
 assert.deepStrictEqual(
   sc('A Little Piece Of Heaven', 'Avenged Sevenfold'),
   { artist: 'Avenged Sevenfold', title: 'A Little Piece Of Heaven' });
@@ -107,22 +90,18 @@ assert.deepStrictEqual(
   sc('Get Down - Extended Mix', 'Fisher'),
   { artist: 'Fisher', title: 'Get Down - Extended Mix' });
 
-// A leading artist name is dropped from the title rather than doubled up.
 assert.deepStrictEqual(
   sc('Avenged Sevenfold - Hail To The King', 'Avenged Sevenfold'),
   { artist: 'Avenged Sevenfold', title: 'Hail To The King' });
 
-// No " - " means no split.
 assert.deepStrictEqual(
   yt('Bohemian Rhapsody', 'Queen'),
   { artist: 'Queen', title: 'Bohemian Rhapsody' });
 
-// Missing artist entirely: take it from the title.
 assert.deepStrictEqual(
   yt('Aphex Twin - Xtal', undefined),
   { artist: 'Aphex Twin', title: 'Xtal' });
 
-// A channel that matches neither half leaves the order unproven, so presence.js checks it against the artwork lookup.
 const ambiguity = (/** @type {string} */ track, /** @type {string} */ artist) =>
   trackMetadata({ track, artist, source: 'youtube' }).ambiguous;
 assert.strictEqual(ambiguity('Ruby My Dear - Jit Thin', 'The Amen Connection'), true);

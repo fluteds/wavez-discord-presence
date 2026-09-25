@@ -56,12 +56,15 @@ Copy and rename `config.example.json` to `config.json` (it's gitignored) and set
 | `largeImage` | `LARGE_IMAGE` | Wavez logo |
 | `sourceBadges` | `SOURCE_BADGES` | `false` |
 | `lastfmKey` | `LASTFM_API_KEY` | Unset, iTunes is used instead |
+| `token` | `WAVEZ_BRIDGE_TOKEN` | Unset, no token is required |
 
 `appId`, the Discord application your presence appears under. The bundled default is a public identifier, not a secret. Application IDs ship inside every Discord client, so sharing one is expected and safe. Point this at your own [Discord app](https://discord.com/developers/applications) only if you want a different app name on your profile.
 
 `largeImage`, fallback artwork when a track has no thumbnail. Either an image URL, or the key of an asset you uploaded under Rich Presence → Art Assets in your Discord app.
 
 `port`, change only if `6969` is taken. If you do, update `BRIDGE` at the top of the userscript to match; both ends have to agree.
+
+`token`, a shared secret the bridge demands on every POST. Leave it unset unless other people have accounts on this machine: the bridge only listens on `127.0.0.1`, only answers `POST /presence`, and only accepts `application/json`, which a web page cannot send cross-origin without a CORS grant it will never get. Set it and every POST has to carry the same value in an `X-Wavez-Token` header, so put it in `TOKEN` at the top of the userscript too. Any string does; there is nothing to register. Leave it unset if you also drive the bridge from wavez-cli, which does not send the header yet.
 
 `sourceBadges`, what the small corner badge on the artwork shows. Off by default, so it's the wavez logo with `wavez.fm` on hover. Set it to `true` and it becomes a YouTube or SoundCloud badge instead, or a **Live** indicator for live streams.
 
@@ -76,6 +79,10 @@ Check the terminal. `✅ connected to Discord` means it found the desktop app, i
 ### The bridge says `port 6969 is busy`
 
 It's already running in another terminal. Either use that one, or set `PORT` and update `BRIDGE` in the userscript to match.
+
+### The bridge answers `404` or `415`
+
+Presence goes to `POST http://127.0.0.1:6969/presence` as `application/json`. An old userscript posting to `/` still works, but nothing else does: another path is a `404`, another method a `405`, another content type a `415`, a body over 16KB a `413`, and a payload with a field of the wrong type a `400` naming the field. The bridge logs every refusal with its reason.
 
 ### The bridge never logs anything when anyone plays a track
 

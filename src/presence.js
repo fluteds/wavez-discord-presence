@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 // @ts-check
-// wavez.fm -> Discord Rich Presence bridge. The userscript (or wavez-cli) POSTs room/track here; this forwards it to Discord's IPC socket.
 
 /**
  * @typedef {object} Status
@@ -21,12 +20,12 @@
  * @property {string}  [client]  - which front end sent this; absent means the userscript
  */
 
-const http = require('http');
 const { Client } = require('@xhayper/discord-rpc');
 const config = require('./config.js');
 const { trackMetadata } = require('./metadata.js');
 const { albumArt, sameArtist, trimsArtist, lastfmEnabled } = require('./artwork.js');
 const { Arbiter } = require('./arbiter.js');
+const { createBridgeServer } = require('./server.js');
 const { log, warn } = require('./log.js');
 
 const DEFAULT_APP_ID = '1522376776536428655';
@@ -36,8 +35,8 @@ const PORT = Number(process.env.PORT) || config.port || 6969;
 const SOURCE_BADGES = process.env.SOURCE_BADGES
   ? process.env.SOURCE_BADGES === 'true'
   : config.sourceBadges === true;
+const TOKEN = process.env.WAVEZ_BRIDGE_TOKEN || config.token || '';
 
-// Discord's asset proxy can't decode .ico; Google's favicon service returns a PNG for any domain.
 /** @param {string} domain */
 const favicon = (domain) => `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 /** @type {Record<string, { name: string, icon: string }>} */
@@ -47,7 +46,6 @@ const SOURCES = {
 };
 const WAVEZ_ICON = favicon('wavez.fm');
 
-// Discord rejects details/state shorter than 2 chars and caps at 128.
 /** @param {unknown} s @returns {string | undefined} */
 const clamp = (s) => {
   const t = String(s || '').trim().slice(0, 128);
@@ -57,10 +55,10 @@ const clamp = (s) => {
 const client = new Client({ clientId: APP_ID });
 let ready = false;
 /** @type {Status | null} */
-let last = null;         // most recent status; replayed when Discord reconnects
+let last = null;
 let cleared = false;
-let applied = '';        // what's on Discord now, to skip repeat heartbeats
-const STALE_MS = 40000;  // no heartbeat this long = wavez closed, clear presence
+let applied = '';
+const STALE_MS = 40000;
 const arbiter = new Arbiter(STALE_MS);
 
 /** @param {Status} status */
@@ -90,12 +88,9 @@ async function apply(status) {
   if (last !== status) return;
   const artist = found.artist || (trimsArtist(found.match, parsed) ? String(found.match) : parsed);
 
-  // "Crystal Castles • DJ fluted."
   const line2 = [
     artist,
-    // status.dj && `DJ ${status.dj}`,
   ].filter(Boolean).join(' • ');
-  // "harkach • 5 listeners". Discord renders largeImageText as its own line.
   const line3 = [
     status.room,
     status.listeners && `${status.listeners} listener${status.listeners === 1 ? '' : 's'}`,
@@ -113,15 +108,14 @@ async function apply(status) {
   const image = found.art || status.image || process.env.LARGE_IMAGE || config.largeImage || WAVEZ_ICON;
   /** @type {import('@xhayper/discord-rpc').SetActivity} */
   const activity = {
-    type: 2, // Listening. Some Discord builds still show "Playing"
-    name: clamp(artist) || 'Wavez', // drives the "Listening to ___" header
+    type: 2,
+    name: clamp(artist) || 'Wavez',
     details: clamp(title) || 'Listening on wavez.fm',
     state: clamp(line2),
     largeImageText: clamp(line3) || 'wavez.fm',
     largeImageKey: image,
     buttons: buttons.length ? buttons : undefined,
   };
-  // No largeImageUrl
   if (SOURCE_BADGES && status.isLive) { activity.smallImageKey = WAVEZ_ICON; activity.smallImageText = 'Live'; }
   else if (SOURCE_BADGES && src) { activity.smallImageKey = src.icon; activity.smallImageText = src.name; }
   else { activity.smallImageKey = WAVEZ_ICON; activity.smallImageText = 'wavez.fm'; }
@@ -146,7 +140,7 @@ async function apply(status) {
 
 client.on('ready', () => {
   ready = true;
-  applied = ''; // force a re-push after (re)connect
+  applied = '';
   log(`✅ connected to Discord as ${client.user?.username}`);
   if (last && !arbiter.isStale()) apply(last).catch((e) => warn('apply failed:', e.message));
   else client.user?.clearActivity().catch(() => {});
@@ -167,7 +161,6 @@ function connect() {
     .then(() => { connecting = false; })
     .catch((e) => {
       connecting = false;
-      // a failed connect leaves a once('connected') behind and never clears its rejected promise, so retries would be no-ops
       client.removeAllListeners('connected');
       // @ts-ignore - private, but nothing else resets it
       client.connectionPromise = undefined;
@@ -176,7 +169,6 @@ function connect() {
     });
 }
 
-// wavez closed: clear the presence once the heartbeat goes stale.
 setInterval(() => {
   if (!ready) return;
   if (last && !arbiter.isStale()) return;
@@ -189,21 +181,17 @@ setInterval(() => {
   arbiter.release();
 }, 15000);
 
-http.createServer((req, res) => {
-  if (req.method !== 'POST') { res.writeHead(405).end(); return; }
-  let body = '';
-  req.on('data', (c) => (body += c));
-  req.on('end', () => {
-    try { apply(JSON.parse(body)).catch((e) => warn('apply failed:', e.message)); res.writeHead(204).end(); }
-    catch (e) { warn('bad POST:', e instanceof Error ? e.message : e); res.writeHead(400).end('bad json'); }
-  });
+createBridgeServer({
+  token: TOKEN,
+  onStatus: (status) => { apply(status).catch((e) => warn('apply failed:', e.message)); },
 }).on('error', (e) => {
   // @ts-ignore - code exists on Node's system errors
   if (e.code === 'EADDRINUSE') warn(`⚠️  port ${PORT} is busy - is the bridge already running? Set PORT to use another.`);
   else warn('server error:', e.message);
   process.exit(1);
 }).listen(PORT, '127.0.0.1', () => {
-  log(`🎧 wavez presence bridge listening on :${PORT}`);
+  log(`🎧 wavez presence bridge listening on http://127.0.0.1:${PORT}/presence`);
+  if (TOKEN) log('🔒 token required on every POST (x-wavez-token)');
   log(`🎨 cover art source: ${lastfmEnabled ? 'Last.fm (iTunes on fallback)' : 'iTunes (set lastfmKey to use Last.fm)'}`);
 });
 

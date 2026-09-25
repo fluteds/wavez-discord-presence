@@ -18,12 +18,11 @@
 (function () {
   'use strict';
 
-  const BRIDGE = 'http://127.0.0.1:6969';
+  const BRIDGE = 'http://127.0.0.1:6969/presence';
+  const TOKEN = '';
 
-  // The userscript sandbox means page globals live on unsafeWindow.
   const W = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
-  // State shape: github.com/WavezFM/WavezFM-Extension-API
   function snapshot() {
     const api = W.WavezFM;
     if (!api || api.version !== '1') return null;
@@ -36,7 +35,7 @@
     const playing = !!(pb && pb.title && !pb.paused);
 
     return {
-      client: 'userscript', // the bridge uses this to arbitrate when wavez-cli is posting too
+      client: 'userscript',
       playing,
       track: pb ? pb.title : null,
       artist: pb ? pb.artist : null,
@@ -65,7 +64,7 @@
     GM_xmlhttpRequest({
       method: 'POST',
       url: BRIDGE,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(TOKEN ? { 'X-Wavez-Token': TOKEN } : {}) },
       data: JSON.stringify({ ...snap, startedAt: snap.startedAt ? snap.startedAt / 1000 : null }),
       onload: (r) => console.log('[wz-presence] bridge replied', r.status),
       onerror: (e) => console.warn('[wz-presence] bridge unreachable', e),
@@ -77,7 +76,6 @@
     api.room.subscribe('playback_changed', push);
     api.room.subscribe('room_changed', push);
   }
-  // Heartbeat: clearing `last` forces a resend, so a bridge started after the page still syncs.
   setInterval(() => { last = ''; push(); }, 15000);
   push();
 })();

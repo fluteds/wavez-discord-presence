@@ -3,5 +3,6 @@
   "port": 6969,
   "largeImage": "https://wavez.fm/favicon.ico",
   "sourceBadges": false,
-  "lastfmKey": ""
+  "lastfmKey": "",
+  "token": ""
 }
