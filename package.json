@@ -37,6 +37,6 @@
   },
   "//overrides": "The pinned @discordjs/rest@2.6.1 (via @xhayper/discord-rpc) hard-requires undici 6.24.1, which is under the <=6.26.0 advisories; this lifts it to a patched 6.27.x. @discordjs/rest@2.6.3 already asks for ^6.27.0 itself, so drop this override once the lockfile resolves @discordjs/rest >=2.6.3 (bump @xhayper/discord-rpc). npm audit is clean with the override in place.",
   "overrides": {
-    "undici": "^6.28.0"
+    "undici": "^6.29.0"
   }
 }
